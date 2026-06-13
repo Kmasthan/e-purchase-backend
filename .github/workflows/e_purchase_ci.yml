@@ -47,7 +47,7 @@ jobs:
 
       - name: Set DEV version
         if: ${{ github.event.inputs.build_type == 'DEV' }}
-        run: mvn versions:set -f ${{ github.event.inputs.module }}/pom.xml -DnewVersion=DEV-SNAPSHOT -DgenerateBackupPoms=false
+        run: mvn versions:set -f ${{ github.event.inputs.module }}/pom.xml -DnewVersion=DEV-SNAPSHOT -DgenerateBackupPoms=false -DprocessParent=false
 
       - name: Delete existing DEV package version (DEV only)
         if: ${{ github.event.inputs.build_type == 'DEV' }}
@@ -76,7 +76,7 @@ jobs:
           RELEASE_VERSION=${CURRENT_VERSION%-SNAPSHOT}
           NEXT_PATCH=$(echo $RELEASE_VERSION | awk -F. '{$NF=$NF+1; print}' OFS='.')
           NEXT_VERSION="${NEXT_PATCH}-SNAPSHOT"
-          mvn versions:set -f $MODULE/pom.xml -DnewVersion=$RELEASE_VERSION -DgenerateBackupPoms=false
+          mvn versions:set -f $MODULE/pom.xml -DnewVersion=$RELEASE_VERSION -DgenerateBackupPoms=false -DprocessParent=false
           git add $MODULE/pom.xml
           git commit -m "release: $MODULE $RELEASE_VERSION"
           git tag "$MODULE-$RELEASE_VERSION"
@@ -91,7 +91,7 @@ jobs:
         if: ${{ github.event.inputs.build_type == 'RELEASE' }}
         run: |
           MODULE=${{ github.event.inputs.module }}
-          mvn versions:set -f $MODULE/pom.xml -DnewVersion=${{ env.NEXT_VERSION }} -DgenerateBackupPoms=false
+          mvn versions:set -f $MODULE/pom.xml -DnewVersion=${{ env.NEXT_VERSION }} -DgenerateBackupPoms=false -DprocessParent=false
           git add $MODULE/pom.xml
           git commit -m "chore: bump $MODULE to ${{ env.NEXT_VERSION }}"
           git push origin HEAD:${{ github.event.inputs.branch }} --tags
