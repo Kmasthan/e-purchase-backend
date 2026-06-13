@@ -30,6 +30,7 @@ jobs:
     permissions:
       contents: write
       packages: write
+      actions: write
 
     steps:
       - uses: actions/checkout@v4
@@ -43,6 +44,27 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: maven
+
+      - name: Set DEV version
+        if: ${{ github.event.inputs.build_type == 'DEV' }}
+        run: mvn versions:set -f ${{ github.event.inputs.module }}/pom.xml -DnewVersion=DEV-SNAPSHOT -DgenerateBackupPoms=false
+
+      - name: Delete existing DEV package version (DEV only)
+        if: ${{ github.event.inputs.build_type == 'DEV' }}
+        run: |
+          MODULE=${{ github.event.inputs.module }}
+          PACKAGE_NAME="com.e-purchase:${MODULE}"
+          ENCODED_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$PACKAGE_NAME', safe=''))")
+          VERSION_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions" \
+            | jq -r '.[] | select(.name == "DEV-SNAPSHOT") | .id')
+          if [ -n "$VERSION_ID" ]; then
+            curl -s -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+              "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions/$VERSION_ID"
+            echo "Deleted existing DEV-SNAPSHOT version"
+          fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Bump version and tag (RELEASE only)
         if: ${{ github.event.inputs.build_type == 'RELEASE' }}
@@ -58,12 +80,18 @@ jobs:
           git add $MODULE/pom.xml
           git commit -m "release: $MODULE $RELEASE_VERSION"
           git tag "$MODULE-$RELEASE_VERSION"
-          mvn versions:set -f $MODULE/pom.xml -DnewVersion=$NEXT_VERSION -DgenerateBackupPoms=false
-          git add $MODULE/pom.xml
-          git commit -m "chore: bump $MODULE to $NEXT_VERSION"
-          git push origin HEAD:${{ github.event.inputs.branch }} --tags
+          echo "NEXT_VERSION=$NEXT_VERSION" >> $GITHUB_ENV
 
       - name: Build and deploy selected module
         run: mvn clean deploy -f ${{ github.event.inputs.module }}/pom.xml --settings .github/maven-settings.xml
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Bump to next SNAPSHOT and push (RELEASE only)
+        if: ${{ github.event.inputs.build_type == 'RELEASE' }}
+        run: |
+          MODULE=${{ github.event.inputs.module }}
+          mvn versions:set -f $MODULE/pom.xml -DnewVersion=${{ env.NEXT_VERSION }} -DgenerateBackupPoms=false
+          git add $MODULE/pom.xml
+          git commit -m "chore: bump $MODULE to ${{ env.NEXT_VERSION }}"
+          git push origin HEAD:${{ github.event.inputs.branch }} --tags
