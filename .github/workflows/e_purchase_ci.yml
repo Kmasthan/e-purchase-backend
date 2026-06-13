@@ -62,7 +62,7 @@ jobs:
             curl -s -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions/$VERSION_ID"
             echo "Deleted existing DEV version"
-            sleep 5
+            sleep 10
           else
             echo "No existing DEV found, skipping delete"
           fi
