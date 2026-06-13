@@ -53,7 +53,7 @@ jobs:
         if: ${{ github.event.inputs.build_type == 'DEV' }}
         run: |
           MODULE=${{ github.event.inputs.module }}
-          PACKAGE_NAME="com.e-purchase:${MODULE}"
+          PACKAGE_NAME="com.e-purchase.${MODULE}"
           ENCODED_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$PACKAGE_NAME', safe=''))")
           STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
             -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
