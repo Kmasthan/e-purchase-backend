@@ -47,27 +47,7 @@ jobs:
 
       - name: Set DEV version
         if: ${{ github.event.inputs.build_type == 'DEV' }}
-        run: mvn versions:set -f ${{ github.event.inputs.module }}/pom.xml -DnewVersion=DEV -DgenerateBackupPoms=false -DprocessParent=false
-
-      - name: Delete existing DEV package version (DEV only)
-        if: ${{ github.event.inputs.build_type == 'DEV' }}
-        run: |
-          MODULE=${{ github.event.inputs.module }}
-          PACKAGE_NAME="com.e-purchase:${MODULE}"
-          ENCODED_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$PACKAGE_NAME', safe=''))")
-          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions")
-          VERSION_ID=$(echo "$RESPONSE" | jq -r 'if type == "array" then .[] | select(.name == "DEV") | .id else empty end')
-          if [ -n "$VERSION_ID" ]; then
-            curl -s -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions/$VERSION_ID"
-            echo "Deleted existing DEV version"
-            sleep 10
-          else
-            echo "No existing DEV found, skipping delete"
-          fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: mvn versions:set -f ${{ github.event.inputs.module }}/pom.xml -DnewVersion=DEV-SNAPSHOT -DgenerateBackupPoms=false -DprocessParent=false
 
       - name: Bump version and tag (RELEASE only)
         if: ${{ github.event.inputs.build_type == 'RELEASE' }}
