@@ -1,0 +1,37 @@
+name: E-Purchase CI
+
+on:
+  workflow_dispatch:
+    inputs:
+      branch:
+        description: 'Branch to build'
+        required: true
+        default: 'staging'
+      module:
+        description: 'Module to build'
+        required: true
+        type: choice
+        options:
+          - auth-service
+          - api_gateway
+          - user_service
+          - order-service
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.branch }}
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v4
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Build selected module
+        run: mvn clean install -f ${{ github.event.inputs.module }}/pom.xml
