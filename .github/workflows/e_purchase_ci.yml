@@ -55,13 +55,15 @@ jobs:
           MODULE=${{ github.event.inputs.module }}
           PACKAGE_NAME="com.e-purchase:${MODULE}"
           ENCODED_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$PACKAGE_NAME', safe=''))")
-          VERSION_ID=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions" \
-            | jq -r '.[] | select(.name == "DEV-SNAPSHOT") | .id')
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
+            "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions")
+          VERSION_ID=$(echo "$RESPONSE" | jq -r 'if type == "array" then .[] | select(.name == "DEV-SNAPSHOT") | .id else empty end')
           if [ -n "$VERSION_ID" ]; then
             curl -s -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
               "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions/$VERSION_ID"
             echo "Deleted existing DEV-SNAPSHOT version"
+          else
+            echo "No existing DEV-SNAPSHOT found, skipping delete"
           fi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
