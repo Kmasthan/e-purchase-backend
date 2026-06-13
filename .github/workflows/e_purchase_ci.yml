@@ -47,7 +47,23 @@ jobs:
 
       - name: Set DEV version
         if: ${{ github.event.inputs.build_type == 'DEV' }}
-        run: mvn versions:set -f ${{ github.event.inputs.module }}/pom.xml -DnewVersion=DEV-SNAPSHOT -DgenerateBackupPoms=false -DprocessParent=false
+        run: mvn versions:set -f ${{ github.event.inputs.module }}/pom.xml -DnewVersion=DEV -DgenerateBackupPoms=false -DprocessParent=false
+
+      - name: Delete existing DEV package (DEV only)
+        if: ${{ github.event.inputs.build_type == 'DEV' }}
+        run: |
+          MODULE=${{ github.event.inputs.module }}
+          PACKAGE_NAME="com.e-purchase:${MODULE}"
+          ENCODED_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$PACKAGE_NAME', safe=''))")
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
+            -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}")
+          if [ "$STATUS" = "204" ]; then
+            echo "Package deleted, waiting for propagation..."
+            sleep 15
+          else
+            echo "Package not found or already deleted (status: $STATUS), skipping"
+          fi
 
       - name: Bump version and tag (RELEASE only)
         if: ${{ github.event.inputs.build_type == 'RELEASE' }}
