@@ -49,20 +49,32 @@ jobs:
         if: ${{ github.event.inputs.build_type == 'DEV' }}
         run: mvn versions:set -f ${{ github.event.inputs.module }}/pom.xml -DnewVersion=DEV -DgenerateBackupPoms=false -DprocessParent=false
 
-      - name: Delete existing DEV package (DEV only)
+      - name: Delete existing DEV package version (DEV only)
         if: ${{ github.event.inputs.build_type == 'DEV' }}
         run: |
           MODULE=${{ github.event.inputs.module }}
           PACKAGE_NAME="com.e-purchase.${MODULE}"
           ENCODED_NAME=$(python3 -c "import urllib.parse; print(urllib.parse.quote('$PACKAGE_NAME', safe=''))")
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -X DELETE \
-            -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
-            "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}")
-          if [ "$STATUS" = "204" ]; then
-            echo "Package deleted, waiting for propagation..."
-            sleep 15
+          RESPONSE=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+            "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions")
+          VERSION_ID=$(echo "$RESPONSE" | jq -r 'if type == "array" then .[] | select(.name == "DEV") | .id else empty end')
+          if [ -n "$VERSION_ID" ]; then
+            curl -s -X DELETE -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+              "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions/$VERSION_ID"
+            echo "Deleted DEV version, waiting for propagation..."
+            for i in $(seq 1 10); do
+              sleep 5
+              CHECK=$(curl -s -H "Authorization: Bearer ${{ secrets.PAT_TOKEN }}" \
+                "https://api.github.com/users/Kmasthan/packages/maven/${ENCODED_NAME}/versions" \
+                | jq -r 'if type == "array" then .[] | select(.name == "DEV") | .id else empty end')
+              echo "Check $i: version still exists: $CHECK"
+              if [ -z "$CHECK" ]; then
+                echo "DEV version fully removed"
+                break
+              fi
+            done
           else
-            echo "Package not found or already deleted (status: $STATUS), skipping"
+            echo "No existing DEV version found, skipping delete"
           fi
 
       - name: Bump version and tag (RELEASE only)
