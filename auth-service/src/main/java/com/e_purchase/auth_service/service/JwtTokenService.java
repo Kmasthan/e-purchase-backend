@@ -1,6 +1,6 @@
 package com.e_purchase.auth_service.service;
 
-import com.e_purchase.auth_service.Entity.UserInfo;
+import com.e_purchase.auth_service.entity.UserInfo;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import io.jsonwebtoken.security.Keys;
