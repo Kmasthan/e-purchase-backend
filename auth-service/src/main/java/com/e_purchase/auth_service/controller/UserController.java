@@ -41,4 +41,5 @@ public class UserController {
     public ResponseEntity<String> validateOtp(@RequestBody @NonNull ValidateOtpDto validateOtpDto) {
         return ResponseEntity.ok(userService.validateOtp(validateOtpDto));
     }
+    
 }
