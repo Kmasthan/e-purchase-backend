@@ -10,7 +10,7 @@ import java.time.LocalDateTime;
 
 @Component
 public class ForgotPasswordOtpScheduler {
-    private final Logger LOGGER = LoggerFactory.getLogger(ForgotPasswordOtpScheduler.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ForgotPasswordOtpScheduler.class);
     private final PasswordResetOtpRepository passwordResetOtpRepository;
 
     public ForgotPasswordOtpScheduler(PasswordResetOtpRepository passwordResetOtpRepository) {
