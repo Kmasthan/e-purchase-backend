@@ -1,4 +1,4 @@
-package com.e_purchase.auth_service.Entity;
+package com.e_purchase.auth_service.entity;
 
 import com.e_purchase.auth_service.enums.Gender;
 import com.e_purchase.auth_service.enums.UserType;

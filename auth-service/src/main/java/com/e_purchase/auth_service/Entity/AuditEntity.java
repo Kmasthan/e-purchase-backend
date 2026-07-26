@@ -1,4 +1,4 @@
-package com.e_purchase.auth_service.Entity;
+package com.e_purchase.auth_service.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.EntityListeners;
